@@ -17,7 +17,7 @@ LBA supported
 Loading kernel...Disk error! Code: 0xJMx
 ```
 
-![错误截图](/Users/akm/.gemini/antigravity/brain/086151cd-40a1-4133-ab8a-0a0f25d484f5/uploaded_image_1764637627628.png)
+![错误截图](/imgs/20251202094700.jpg)
 
 ---
 
