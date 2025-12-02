@@ -65,11 +65,41 @@ x86_64-elf-ld -m elf_i386 -T linker.ld -o kernel.bin kernel.o
 
 而 bootloader 期望从 `0x10000` 地址加载的是**纯机器代码**，直接可执行。
 
+#### ELF vs 纯二进制对比
+
+```mermaid
+graph TB
+    subgraph ELF["❌ ELF 格式 (kernel.elf)"]
+        E1["ELF 文件头<br/>0x00-0x33<br/>52字节"]
+        E2["程序头表<br/>0x34-0x53<br/>32字节"]
+        E3["...<br/>其他元数据"]
+        E4["实际代码<br/>0x1000开始<br/>48字节"]
+        E1 --> E2 --> E3 --> E4
+    end
+    
+    subgraph BIN["✅ 纯二进制 (kernel.bin)"]
+        B1["机器代码<br/>0x00开始<br/>55 89 e5...<br/>48字节"]
+    end
+    
+    style ELF fill:#ffcccc
+    style BIN fill:#ccffcc
+    style E1 fill:#ff9999
+    style E2 fill:#ff9999
+    style E3 fill:#ff9999
+    style E4 fill:#99ff99
+    style B1 fill:#99ff99
+```
+
+**关键区别**：
+- **ELF 格式**：实际代码在偏移 `0x1000` 处，前面是元数据
+- **纯二进制**：从第一个字节就是可执行的机器代码
+- Bootloader 加载到 `0x10000` 后直接跳转执行，如果是 ELF 格式会执行文件头数据！
+
 #### 为什么会显示 "0xJMx"？
 
 当 bootloader 跳转到 `0x10000` 时，实际执行的是 ELF 文件头数据：
 ```
-7f 45 4c 46  →  这些字节被当作指令执行
+7f 45 4c 46  →  这些字节被当作指令执行（随机指令！）
 ```
 
 导致程序行为异常，错误代码寄存器 `ah` 被破坏，`print_hex` 函数打印出乱码。
@@ -104,6 +134,60 @@ Bootloader 要求从 LBA 扇区 1 开始读取 **10 个扇区**（5120 字节）
 - `os.img` 总大小只有 560 字节（约 1.1 个扇区）
 - BIOS 试图读取不存在的扇区 2-10
 - 返回磁盘读取错误
+
+#### 问题镜像的扇区布局
+
+```mermaid
+block-beta
+    columns 11
+    block:sector0["扇区 0"]:1
+        S0["boot.bin<br/>512字节<br/>✅ 存在"]
+    end
+    block:sector1["扇区 1"]:1
+        S1["kernel.bin<br/>48字节<br/>✅ 存在"]
+    end
+    block:sector2["扇区 2"]:1
+        S2["❌<br/>不存在"]
+    end
+    block:sector3["扇区 3"]:1
+        S3["❌<br/>不存在"]
+    end
+    block:sector4["扇区 4"]:1
+        S4["❌<br/>不存在"]
+    end
+    block:sector5["扇区 5"]:1
+        S5["❌<br/>不存在"]
+    end
+    block:sector6["扇区 6"]:1
+        S6["❌<br/>不存在"]
+    end
+    block:sector7["扇区 7"]:1
+        S7["❌<br/>不存在"]
+    end
+    block:sector8["扇区 8"]:1
+        S8["❌<br/>不存在"]
+    end
+    block:sector9["扇区 9"]:1
+        S9["❌<br/>不存在"]
+    end
+    block:sector10["扇区 10"]:1
+        S10["❌<br/>不存在"]
+    end
+    
+    style S0 fill:#99ff99
+    style S1 fill:#99ff99
+    style S2 fill:#ff9999
+    style S3 fill:#ff9999
+    style S4 fill:#ff9999
+    style S5 fill:#ff9999
+    style S6 fill:#ff9999
+    style S7 fill:#ff9999
+    style S8 fill:#ff9999
+    style S9 fill:#ff9999
+    style S10 fill:#ff9999
+```
+
+**问题**：DAP 要求读取扇区 1-10（共10个扇区），但镜像只有 560 字节 ≈ 1.1 个扇区！
 
 ### 第四步：验证镜像内容
 
@@ -173,11 +257,71 @@ $ hexdump -C kernel.bin | head -3
 2. 将 `boot.bin` 写入扇区 0（引导扇区）
 3. 将 `kernel.bin` 从扇区 1 开始写入
 
+#### 修复后的扇区布局
+
+```mermaid
+block-beta
+    columns 11
+    block:sector0["扇区 0<br/>0x0000"]:1
+        S0["boot.bin<br/>512字节<br/>引导代码"]
+    end
+    block:sector1["扇区 1<br/>0x0200"]:1
+        S1["kernel.bin<br/>48字节<br/>内核代码"]
+    end
+    block:sector2["扇区 2<br/>0x0400"]:1
+        S2["填充<br/>0x00"]
+    end
+    block:sector3["扇区 3<br/>0x0600"]:1
+        S3["填充<br/>0x00"]
+    end
+    block:sector4["扇区 4<br/>0x0800"]:1
+        S4["填充<br/>0x00"]
+    end
+    block:sector5["扇区 5<br/>0x0A00"]:1
+        S5["填充<br/>0x00"]
+    end
+    block:sector6["扇区 6<br/>0x0C00"]:1
+        S6["填充<br/>0x00"]
+    end
+    block:sector7["扇区 7<br/>0x0E00"]:1
+        S7["填充<br/>0x00"]
+    end
+    block:sector8["扇区 8<br/>0x1000"]:1
+        S8["填充<br/>0x00"]
+    end
+    block:sector9["扇区 9<br/>0x1200"]:1
+        S9["填充<br/>0x00"]
+    end
+    block:sector10["扇区 10<br/>0x1400"]:1
+        S10["填充<br/>0x00"]
+    end
+    
+    style S0 fill:#6699ff,color:#fff
+    style S1 fill:#99ff99
+    style S2 fill:#e0e0e0
+    style S3 fill:#e0e0e0
+    style S4 fill:#e0e0e0
+    style S5 fill:#e0e0e0
+    style S6 fill:#e0e0e0
+    style S7 fill:#e0e0e0
+    style S8 fill:#e0e0e0
+    style S9 fill:#e0e0e0
+    style S10 fill:#e0e0e0
+```
+
+**数据流程**：
+1. BIOS 加载扇区 0 到内存 `0x7C00`，执行 bootloader
+2. Bootloader 使用 LBA 读取扇区 1-10 到内存 `0x10000`
+3. Bootloader 跳转到 `0x10000` 执行内核代码
+4. 内核代码写入 VGA 显存 `0xB8000` 显示 "Hi"
+
 验证结果：
 ```bash
 $ ls -lh os.img
 -rw-r--r--  1 akm  staff   5.5K Dec  2 09:11 os.img
 ```
+
+现在镜像有 **5632 字节 = 11 个扇区**，足够 BIOS 读取！
 
 ---
 
