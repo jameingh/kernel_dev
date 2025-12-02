@@ -9,12 +9,6 @@ mov sp, 0x7C00
 ; 调用我们新写的函数，从磁盘加载内核
 call load_kernel
 
-; --- 新增的调试代码 ---
-; 如果load_kernel成功返回，我们在这里打印一个'OK'消息
-mov si, SUCCESS_MSG
-call print_string
-; --- 调试代码结束 ---
-
 ; 跳转到我们加载内核的地址 (0x10000)
 jmp 0x10000
 
@@ -39,11 +33,6 @@ print_string:
 ; 定义一个从磁盘加载内核的函数
 ; 使用 BIOS int 0x13, ah=0x02 功能
 load_kernel:
-    ; --- 新增的调试代码 ---
-    ; 打印一个消息，确认我们进入了load_kernel函数
-    mov si, DISK_READ_MSG
-    call print_string
-    ; --- 调试代码结束 ---
     mov ah, 0x02    ; BIOS功能号：读磁盘
     mov al, 10       ; 精确读取内核所需的10个扇区
     mov cl, 2        ; 从第2个扇区开始读 (LBA 1)
@@ -67,8 +56,6 @@ disk_error:
 
 ; 数据区
 BOOT_DRIVE db 0
-SUCCESS_MSG db 'OK, loading kernel...', 0
-DISK_READ_MSG db 'About to read disk...', 0 ; 新增这行
 
 ; 填充0和魔法数字
 times 510-($-$$) db 0
