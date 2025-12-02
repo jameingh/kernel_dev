@@ -213,7 +213,7 @@ START_MSG db 'Starting...', 13, 10, 0
 LBA_MSG db 'LBA supported', 13, 10, 0
 NO_LBA_MSG db 'LBA not supported, using CHS', 13, 10, 0
 CHS_MSG db 'Using CHS mode', 13, 10, 0
-LOADING_MSG db 'Loading kernel...', 0
+LOADING_MSG db 'Loading kernel...', 13, 10, 0
 SUCCESS_MSG db 'Kernel loaded!', 13, 10, 0
 ERROR_MSG db 'Disk error! Code: 0x', 0
 

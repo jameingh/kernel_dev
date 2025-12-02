@@ -68,6 +68,7 @@ isr%1:
 %macro IRQ 2
 global irq%1
 irq%1:
+    push byte 0     ; 压入错误码占位符
     push byte %2    ; 压入中断号
     jmp irq_common_stub
 %endmacro
@@ -141,7 +142,9 @@ isr_common_stub:
     mov fs, ax
     mov gs, ax
     
+    push esp        ; 传递 struct registers* 参数
     call isr_handler ; 调用C处理函数
+    add esp, 4      ; 清理参数
     
     pop gs          ; 恢复段寄存器
     pop fs
@@ -164,7 +167,9 @@ irq_common_stub:
     mov fs, ax
     mov gs, ax
     
+    push esp        ; 传递 struct registers* 参数
     call irq_handler ; 调用C处理函数
+    add esp, 4      ; 清理参数
     
     pop gs          ; 恢复段寄存器
     pop fs
