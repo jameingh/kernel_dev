@@ -1,7 +1,8 @@
 #!/bin/bash
 nasm -f bin boot.asm -o boot.bin
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c kernel.c -o kernel.o
-x86_64-elf-ld -m elf_i386 -T linker.ld -o kernel.elf kernel.o
+x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c terminal.c -o terminal.o
+x86_64-elf-ld -m elf_i386 -T linker.ld -o kernel.elf kernel.o terminal.o
 x86_64-elf-objcopy -O binary kernel.elf kernel.bin
 
 # 填充镜像到至少11个扇区（5632字节），确保有足够数据供bootloader读取
