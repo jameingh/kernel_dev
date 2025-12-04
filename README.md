@@ -61,3 +61,19 @@
 ```bash
 ./build.sh
 ```
+
+## 学习文档
+- 第一阶段（引导与基础）
+  - [week1.md](./week1.md)
+  - [week2.md](./week2.md)
+  - [week3.md](./week3.md)
+  - [vga_terminal_summary.md](./vga_terminal_summary.md)
+  - [troubleshooting_disk_error.md](./troubleshooting_disk_error.md)
+
+- 第二阶段（神经系统）
+  - [real_vs_protected_mode.md](./real_vs_protected_mode.md)
+  - [week4.md](./week4.md)
+  - [week4_idt_call_chain.md](./week4_idt_call_chain.md)
+  - [idt的由来.md](./idt的由来.md)
+  - [PIC优先级排序和选择过程.md](./PIC优先级排序和选择过程.md)
+  - [why_two_gdt.md](./why_two_gdt.md)
