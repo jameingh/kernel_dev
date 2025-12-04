@@ -57,11 +57,11 @@ void isr_handler(struct registers* regs) {
 
 // IRQ处理例程
 void irq_handler(struct registers* regs) {
-    // 发送EOI信号给PIC
+    // 发送EOI（End Of Interrupt，结束中断）信号给PIC，告诉 PIC“该中断已处理，可以发后续中断”。
     if (regs->int_no >= 40) {
-        outb(0xA0, 0x20);  // 从PIC
+        outb(0xA0, 0x20);  // 向从 PIC 的命令端口 0xA0 发送 0x20 （EOI）。
     }
-    outb(0x20, 0x20);      // 主PIC
+    outb(0x20, 0x20);      // 向主 PIC 的命令端口 0x20 发送 0x20 （EOI）。
     
     // 忽略时钟中断(IRQ0)的打印，防止刷屏
     if (regs->int_no == 32) return;
