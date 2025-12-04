@@ -25,17 +25,17 @@
 ```
 
 ## 启动与初始化
-- 内核主函数初始化顺序：`GDT` → `IDT` → `ISR/IRQ` → 使能中断 → 触发断点。
-  - `kernel.c:20–24` 依次调用 `idt_init()`、`isr_init()`、`irq_init()`。
-  - `kernel.c:29` 使能中断 `sti`；`kernel.c:33–34` 触发 `int 3` 测试。
+- 内核主函数初始化顺序：`GDT` → `IDT` → `ISR/IRQ` → `PIT` → 使能中断。
+  - 在 `kernel.c:kmain` 中依次调用 `idt_init`、`isr_init`、`irq_init`、`pit_init(100)`。
+  - 在 `kernel.c:kmain` 尾部执行 `sti` 使能中断。
 
 ## IDT 与门项
 - 结构体定义：`idt.h:7–13` 描述 `base_low/sel/flags/base_high`。
 - 初始化与加载：
-  - `idt.c:18–29` 设置 `idtp`，清空 256 项后通过 `lidt` 加载（`isr.asm:183–186`）。
+  - 在 `idt.c:idt_init` 设置 `idtp`，清空 256 项后通过 `isr.asm:idt_flush` 加载。
 - 门项安装：
-  - 异常 `0–31`：`interrupts.c:85–118` 将 `isr0..isr31` 注册到 IDT。
-  - IRQ `32–47`：`interrupts.c:187–203` 将 `irq0..irq15` 注册到 IDT。
+  - 异常 `0–31`：在 `interrupts.c:isr_init` 注册 `isr0..isr31`。
+  - IRQ `32–47`：在 `interrupts.c:irq_init` 注册 `irq0..irq15`。
 - 标志 `0x8E`：表示“存在位=1、DPL=0、类型=0xE（32位中断门）”，选择子 `0x08` 指向内核代码段。
 
 ```text
@@ -49,8 +49,8 @@ IDT[n] 门项布局（32位）
 
 ## PIC 重映射与 IRQ 区间
 - 原始 8259 PIC 将 `IRQ0–7` 映射到 `0x08–0x0F`，与 CPU 异常区间 `0x00–0x1F` 冲突。
-- 通过重映射将主/从 PIC 偏移设置为 `0x20`/`0x28`：`interrupts.c:181–185`。
-- 关键端口与步骤：`interrupts.c:131–179`
+- 通过 `interrupts.c:pic_remap` 将主/从 PIC 偏移设置为 `0x20`/`0x28`。
+- 关键端口与步骤详见 `interrupts.c:pic_remap`。
   - 读取并保存掩码：`PIC1_DATA(0x21)`、`PIC2_DATA(0xA1)`。
   - 发送 `ICW1/2/3/4` 完成重映射与 8086 模式设置。
   - 恢复原掩码，避免误启用未期望的 IRQ。
@@ -76,10 +76,9 @@ IRQ15 → IDT 47  (0x2F)  从 IDE
 ```
 
 ## 汇编入口与通用桩
-- ISR/IRQ 模板：`isr.asm:54–74` 将“错误码占位+中断号”压栈后跳到通用桩。
-- 通用桩保存现场并切换到内核数据段：`isr.asm:132–145`。
-- 通过 `push esp` 向 C 层传递 `struct registers*`：`isr.asm:145–147,170–172`。
-- 返回路径：清理栈、恢复寄存器、`iret`：`isr.asm:149–155,174–180`。
+- ISR/IRQ 模板：见 `isr.asm:ISR_NOERRCODE`、`isr.asm:ISR_ERRCODE`、`isr.asm:IRQ`。
+- 通用桩保存现场并切换到内核数据段：`isr.asm:isr_common_stub`、`isr.asm:irq_common_stub`。
+- 通过 `push esp` 向 C 层传递 `struct registers*`，返回路径 `iret` 同样在上述通用桩中实现。
 
 ```text
 栈布局（进入 C 层前后，示意）
@@ -93,13 +92,11 @@ IRQ15 → IDT 47  (0x2F)  从 IDE
 ```
 
 ## C 层行为与可视化
-- 异常处理：`interrupts.c:11–55`
-  - `int 3`（断点，IDT 3）：绿色提示后 `hlt` 死循环，便于定位返回路径问题。
-  - 其它异常：红色 `EXCEPTION HALT` 并停机。
-- IRQ 处理：`interrupts.c:59–79`
+- 异常处理：`interrupts.c:isr_handler` 顶行显示 `EXC XX` 并停机。
+- IRQ 处理：`interrupts.c:irq_handler`。
   - 按从→主顺序发送 `EOI`：当 `int_no >= 40` 先 `0xA0` 后 `0x20`。
-  - 忽略时钟 `IRQ0` 的打印，防止刷屏：`int_no == 32` 直接返回。
-  - 打印收到的 IRQ 向量（十六进制两位）：例如键盘为 `0x21` 显示 `Received IRQ: 21`。
+  - 时钟 `IRQ0`：累加 `ticks` 并周期刷新顶行状态栏文本。
+  - 键盘 `IRQ1`：读取 `0x60` 扫描码，处理 `Shift/Caps/Backspace/Enter` 并回显；其余 IRQ 打印向量号。
 
 ```text
 异常 vs. IRQ 处理流程
@@ -118,19 +115,19 @@ IRQ15 → IDT 47  (0x2F)  从 IDE
 - 异常：统一停机；后续可为常见异常（页错误、通用保护等）打印寄存器详情与恢复策略。
 
 ## 快速验证
-- 启动后提示测试键盘中断：`kernel.c:26–28`。
-- 按任意键观察日志：`Received IRQ: 21`（键盘 IRQ1 → IDT 33 → 十六进制 `0x21`）。
-- 断点测试：屏幕显示 `INT: 03 Breakpoint (HALT)` 并停机，说明 IDT/ISR 路径正常。
+- 启动后提示测试键盘中断：详见 `kernel.c:kmain`。
+- 顶行右侧状态栏文本周期刷新：`Hz/Ticks/Keys/Caps/Shift`。
+- 键盘字母按 `Shift/Caps` 大小写回显，`Backspace/Enter` 正常工作。
 
 ---
 
 ### 附：API 索引（用于查阅源代码）
-- `kmain` 启动流程：`/Users/akm/CLionProjects/kernel_dev/kernel.c:20–34`
-- `idt_set_gate`：`/Users/akm/CLionProjects/kernel_dev/idt.c:8–15`
-- `idt_init` 与 `lidt`：`/Users/akm/CLionProjects/kernel_dev/idt.c:18–29`、`/Users/akm/CLionProjects/kernel_dev/isr.asm:183–186`
-- `isr_init`（异常注册）：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:84–118`
-- `pic_remap`：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:150–179`
-- `irq_init`（硬件中断注册）：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:181–203`
-- `isr_handler`：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:11–55`
-- `irq_handler`：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:59–79`
-- `ISR/IRQ 汇编入口与通用桩`：`/Users/akm/CLionProjects/kernel_dev/isr.asm:54–74,132–155,157–180`
+- `kmain` 启动流程：`kernel.c:kmain`
+- `idt_set_gate`：`idt.c:idt_set_gate`
+- `idt_init` 与 `lidt`：`idt.c:idt_init`、`isr.asm:idt_flush`
+- `isr_init`（异常注册）：`interrupts.c:isr_init`
+- `pic_remap`：`interrupts.c:pic_remap`
+- `irq_init`（硬件中断注册）：`interrupts.c:irq_init`
+- `isr_handler`：`interrupts.c:isr_handler`
+- `irq_handler`：`interrupts.c:irq_handler`
+- `ISR/IRQ 汇编入口与通用桩`：`isr.asm:ISR_NOERRCODE`、`isr.asm:ISR_ERRCODE`、`isr.asm:IRQ`、`isr.asm:isr_common_stub`、`isr.asm:irq_common_stub`

@@ -1,15 +1,16 @@
-# kernel.c中asm volatile ("int $3");这行的含义
-- 这行是 GCC 内联汇编，调用 x86 指令 `int $3`，触发软件中断向量 3（即“断点”中断）。位置：`/Users/akm/CLionProjects/kernel_dev/kernel.c:34`
-- `volatile` 保证编译器不优化或重排该指令，确保中断被实际触发。
+# 断点中断（int 3）历史说明与当前实现差异
+- 早期版本曾在内核中触发 `int $3` 以验证 IDT/ISR 链路。
+- 当前版本已移除该触发，改为通过 `PIT` 心跳与键盘输入验证中断系统。
 
 **执行路径**
-- CPU 根据 IDT 查找向量 3 的门项，跳到 `isr3` 汇编入口：`/Users/akm/CLionProjects/kernel_dev/isr.asm:80–81`
-- 汇编通用桩保存现场并调用 C 层处理函数：`/Users/akm/CLionProjects/kernel_dev/isr.asm:132–147`
-- C 层在 `isr_handler` 中对 `int_no == 3` 特殊处理，输出 “Breakpoint (HALT)” 并停机（`hlt` 循环）：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:32–44`
+**执行路径（历史版本参考）**
+- CPU 根据 IDT 查找向量 3 的门项，跳到 `isr.asm:isr3` 汇编入口。
+- 汇编通用桩保存现场并调用 C 层处理函数：`isr.asm:isr_common_stub`。
+- C 层在 `interrupts.c:isr_handler` 中显示顶行 `EXC XX` 并停机。
 
 **相关初始化**
-- 向量 3 的门项在 IDT 初始化时被注册：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:89`
-- 启用中断并触发断点用于验证 IDT/ISR/返回路径：`/Users/akm/CLionProjects/kernel_dev/kernel.c:29`, `kernel.c:33–34`
+- 向量 3 的门项在 IDT 初始化时被注册：`interrupts.c:isr_init`
+- 启用中断用于验证中断系统：`kernel.c:kmain` 中的 `sti`
 
 **补充**
 - `int $3` 是 AT&T 语法，`$3` 表示立即数 3；这是经典的“断点”中断，常用于调试或验证中断机制。
@@ -34,14 +35,12 @@
 - 截图里的界面是符合当前设计的。触发 `int 3` 后，异常处理会在屏幕左上角覆盖一段文本并进入停机循环，所以画面稳定不再滚动是预期行为。
 
 **预期视觉效果**
-- 顶行被覆盖为类似 “INT: 03 Breakpoint (HALT)” 的绿色提示（覆盖先前打印的欢迎横幅），来源：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:32–44`。
-- 其余内容保持为初始化日志（GDT/IDT 初始化、提示开启中断等），来源：`/Users/akm/CLionProjects/kernel_dev/kernel.c:20–34`。
-- 之后画面不再更新，是因为异常路径进入 `while(1) hlt;`，位置：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:41–43`。
+- 顶行显示异常号 `EXC XX` 并停机：`interrupts.c:isr_handler`。
+- 初始化日志：`kernel.c:kmain`。
 
 **原因说明**
-- 断点触发：`/Users/akm/CLionProjects/kernel_dev/kernel.c:34` 的 `int $3` 调用向量 3。
-- IDT 跳转：CPU 查找 `IDT[3]` 并进入 `isr3`，位置：`/Users/akm/CLionProjects/kernel_dev/isr.asm:80–81`。
-- C 层处理：打印断点提示后进入 `hlt` 死循环，不走 `iret` 返回，因此屏幕保持静止，便于定位返回路径问题，位置：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:32–44`。
+- IDT 跳转：CPU 查找向量后进入 `isrX`：`isr.asm:ISR_NOERRCODE/ISR_ERRCODE`。
+- C 层处理：异常显示顶行并停机：`interrupts.c:isr_handler`。
 
 **提示**
-- 如果你想继续观察键盘 IRQ 打印（`Received IRQ: 21`），需要避免进入断点的停机循环：暂时注释 `kernel.c` 的 `int $3`，或让 `isr_handler` 在 `int_no == 3` 分支里打印后返回而不是 `while(1) hlt;`。
+- 当前版本通过状态栏与键盘回显验证中断链路：`interrupts.c:draw_status`、`interrupts.c:irq_handler`（IRQ0/IRQ1 分支）。

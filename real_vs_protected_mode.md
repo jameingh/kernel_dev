@@ -78,9 +78,9 @@ init_pm: 设置 DS/ES/FS/GS/SS = 0x10（数据段）
 
 ## 进入保护模式后的“神经系统”
 - 建立 IDT 并注册 ISR/IRQ：
-  - `IDT` 结构与加载：`/Users/akm/CLionProjects/kernel_dev/idt.h:7–13`, `idt.c:18–29`
-  - ISR/IRQ 汇编入口与通用桩：`/Users/akm/CLionProjects/kernel_dev/isr.asm:54–74,132–155,157–180`
-  - C 层处理异常与硬件中断：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:11–79`
+  - `IDT` 结构与加载：`idt.h` 结构定义，`idt.c:idt_init` 加载；`isr.asm:idt_flush` 完成 `lidt`
+  - ISR/IRQ 汇编入口与通用桩：`isr.asm:ISR_NOERRCODE`、`isr.asm:ISR_ERRCODE`、`isr.asm:IRQ`、`isr.asm:isr_common_stub`、`isr.asm:irq_common_stub`
+  - C 层处理异常与硬件中断：`interrupts.c:isr_handler`、`interrupts.c:irq_handler`
 - 重映射 PIC：将 `IRQ0–15` 映射到 `IDT 32–47`，避免与异常 `0–31` 冲突：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:181–203`
 
 ```text
@@ -111,5 +111,5 @@ init_pm: 设置 DS/ES/FS/GS/SS = 0x10（数据段）
 - 实模式打印与读盘：`/Users/akm/CLionProjects/kernel_dev/boot.asm:94–107,109–131,160–172`
 - 切换到保护模式：`/Users/akm/CLionProjects/kernel_dev/boot.asm:39–48,59–65`
 - 32 位段与栈设置：`/Users/akm/CLionProjects/kernel_dev/boot.asm:70–85`, `boot.asm:175–207`
-- IDT 建立与加载：`/Users/akm/CLionProjects/kernel_dev/idt.c:18–29`, `isr.asm:183–186`
-- ISR/IRQ 注册与处理：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:84–118,181–203`, `interrupts.c:11–79`
+- IDT 建立与加载：`idt.c:idt_init`、`isr.asm:idt_flush`
+- ISR/IRQ 注册与处理：`interrupts.c:isr_init`、`interrupts.c:irq_init`、`interrupts.c:isr_handler`、`interrupts.c:irq_handler`

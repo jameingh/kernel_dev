@@ -11,22 +11,22 @@
 - 构建与引导稳定化：增大内核装载扇区与镜像容量，避免“内核未完整加载”导致的重启闪屏。
 
 ## 代码索引
-- IRQ 分发与 EOI：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:107–112`
+- IRQ 分发与 EOI：`interrupts.c:irq_handler`
 - 键盘输入：
-  - IRQ1 分支与状态更新：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:121–132`
-  - 扫描码到字符映射：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:44–97`
-  - Backspace 行内回退与擦除：`/Users/akm/CLionProjects/kernel_dev/terminal.c:66–75`
+  - IRQ1 分支与状态更新：`interrupts.c:irq_handler`
+  - 扫描码到字符映射：`interrupts.c:translate_scancode`
+  - Backspace 行内回退与擦除：`terminal.c:terminal_putchar`
 - PIT 时钟：
-  - 初始化与频率记录：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:99–105`
-  - Tick 计数与刷新时机：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:113–118`
-- 状态栏文本（Hz/Ticks/Keys/Caps/Shift）：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:30–46`
-- 异常直写 VGA 顶行：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:16–26`
-- PIC 重映射与掩码：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:208–229`
-- IRQ 门项注册：`/Users/akm/CLionProjects/kernel_dev/interrupts.c:231–253`
-- 禁用硬件光标：`/Users/akm/CLionProjects/kernel_dev/terminal.c:12–20,31–43`
-- 内核初始化调用序：`/Users/akm/CLionProjects/kernel_dev/kernel.c:20–25,31–36`
-- 引导加载稳定化（加载更多扇区）：`/Users/akm/CLionProjects/kernel_dev/boot.asm:120,224`
-- 镜像容量扩大：`/Users/akm/CLionProjects/kernel_dev/build.sh:26`
+  - 初始化与频率记录：`interrupts.c:pit_init`
+  - Tick 计数与刷新时机：`interrupts.c:irq_handler`（IRQ0 分支）
+- 状态栏文本（Hz/Ticks/Keys/Caps/Shift）：`interrupts.c:draw_status`
+- 异常直写 VGA 顶行：`interrupts.c:isr_handler`
+- PIC 重映射与掩码：`interrupts.c:pic_remap`
+- IRQ 门项注册：`interrupts.c:irq_init`
+- 禁用硬件光标：`terminal.c:terminal_disable_cursor`、`terminal.c:terminal_initialize`
+- 内核初始化调用序：`kernel.c:kmain`
+- 引导加载稳定化（加载更多扇区）：`boot.asm:load_kernel_lba`、`boot.asm:load_kernel_chs`
+- 镜像容量扩大：`build.sh` 生成镜像部分
 
 ## 行为与验证
 - 顶行右侧状态栏文本按固定间隔刷新：`Hz:100 Ticks:000123 Keys:0010 Caps:N Shift:Y`。
