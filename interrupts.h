@@ -66,6 +66,7 @@ extern void irq15(void);
 // 函数声明
 void isr_init(void);
 void irq_init(void);
+void pit_init(uint32_t hz);
 void isr_handler(struct registers* regs);
 void irq_handler(struct registers* regs);
 

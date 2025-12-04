@@ -51,6 +51,8 @@
 [global idt_flush]
 
 ; 32位中断处理程序模板
+; 说明：ISR_NOERRCODE 用于无错误码的异常；ISR_ERRCODE 用于带错误码的异常。
+; 进入时压入“错误码占位”和“中断号”，供 C 层 isr_handler 读取。
 %macro ISR_NOERRCODE 1
 isr%1:
     push byte 0     ; 压入错误码占位符
@@ -66,7 +68,7 @@ isr%1:
 
 ; IRQ处理程序模板
 %macro IRQ 2
-global irq%1
+;global irq%1
 irq%1:
     push byte 0     ; 压入错误码占位符
     push byte %2    ; 压入中断号
@@ -125,7 +127,8 @@ IRQ 13, 45
 IRQ 14, 46
 IRQ 15, 47
 
-; 中断通用处理程序
+; 中断通用处理程序（汇编桩）：保存现场、切换到内核数据段、将 ESP 作为 struct registers* 传给 C 层。
+; 返回前恢复现场并 iret。
 extern isr_handler
 extern irq_handler
 
@@ -142,7 +145,7 @@ isr_common_stub:
     mov fs, ax
     mov gs, ax
     
-    push esp        ; 传递 struct registers* 参数
+    push esp        ; 传递 struct registers* 参数（包含段寄存器、通用寄存器、int_no、err_code）
     call isr_handler ; 调用C处理函数
     add esp, 4      ; 清理参数
     
@@ -179,7 +182,7 @@ irq_common_stub:
     add esp, 8      ; 清理错误码和中断号
     iret            ; 中断返回
 
-; 加载IDT
+; 加载 IDT：C 层传入 idtp 指针，通过 lidt 生效
 idt_flush:
     mov eax, [esp+4]
     lidt [eax]

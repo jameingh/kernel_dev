@@ -117,7 +117,7 @@ load_kernel_chs:
     
     ; 使用传统 CHS 方式
     mov ah, 0x02    ; 读磁盘
-    mov al, 10      ; 读取10个扇区
+    mov al, 64      ; 读取 64 个扇区，确保 kernel.bin 完整载入
     mov ch, 0       ; 柱面0
     mov dh, 0       ; 磁头0  
     mov cl, 2       ; 扇区2 (从1开始计数)
@@ -221,7 +221,7 @@ ERROR_MSG db 'Disk error! Code: 0x', 0
 disk_address_packet:
     db 0x10        ; 数据包大小 (16字节)
     db 0           ; 保留字节
-    dw 10          ; 要读取的扇区数 (10个扇区)
+    dw 64          ; 要读取的扇区数（与上方 AL 对齐）
     dw 0x0000      ; 缓冲区偏移地址 (ES:BX)
     dw 0x1000      ; 缓冲区段地址
     dd 1           ; 起始LBA扇区号 (从扇区1开始，即第二个扇区)

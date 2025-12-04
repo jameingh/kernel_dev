@@ -4,7 +4,7 @@
 #include "interrupts.h"
 
 void kmain(void) {
-    // 初始化终端
+    // 初始化终端：设置默认颜色、禁用硬件光标，准备文本输出
     terminal_initialize();
     
     terminal_setcolor(vga_entry_color(VGA_COLOR_GREEN, VGA_COLOR_BLACK));
@@ -18,20 +18,19 @@ void kmain(void) {
     terminal_writestring("GDT initialized successfully!\n\n");
     
     terminal_writestring("Initializing IDT...\n");
+    // IDT：加载空表 → 注册 ISR/IRQ → 重映射 PIC → 初始化 PIT
     idt_init();
     isr_init();
     irq_init();
+    pit_init(100);
     terminal_writestring("IDT initialized successfully!\n\n");
     
     terminal_writestring("System ready! Interrupts enabled.\n");
     terminal_writestring("Press any key to test keyboard interrupt...\n");
     
-    // 启用中断
+    // 启用中断：允许 CPU 响应外设与异常（此后可接收 IRQ0/IRQ1 等）
     asm volatile ("sti");
     
-    // 触发一个中断来测试
-    terminal_writestring("\nTriggering interrupt 3 (breakpoint)...\n");
-    asm volatile ("int $3");
     
     while (1) {
         // 主循环

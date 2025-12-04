@@ -23,7 +23,7 @@ x86_64-elf-ld -m elf_i386 -T linker.ld -o kernel.elf \
 x86_64-elf-objcopy -O binary kernel.elf kernel.bin
 
 # 创建镜像（需要更多扇区）
-dd if=/dev/zero of=os.img bs=512 count=20 conv=notrunc 2>/dev/null
+dd if=/dev/zero of=os.img bs=512 count=400 conv=notrunc 2>/dev/null
 dd if=boot.bin of=os.img bs=512 count=1 conv=notrunc 2>/dev/null
 dd if=kernel.bin of=os.img bs=512 seek=1 conv=notrunc 2>/dev/null
 
