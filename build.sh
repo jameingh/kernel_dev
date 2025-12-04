@@ -14,10 +14,15 @@ x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c terminal.c -o terminal.o
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c gdt.c -o gdt_c.o
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c idt.c -o idt.o
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c interrupts.c -o interrupts.o
+x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c pmm.c -o pmm.o
 
 # 链接所有目标文件
+# 预链接解决新增模块符号解析顺序问题
+x86_64-elf-ld -r -m elf_i386 -o core.o kernel.o interrupts.o pmm.o
+
+# 最终链接
 x86_64-elf-ld -m elf_i386 -T linker.ld -o kernel.elf \
-    kernel.o terminal.o gdt.o gdt_c.o isr.o idt.o interrupts.o
+    core.o terminal.o gdt.o gdt_c.o isr.o idt.o
 
 # 提取纯二进制代码
 x86_64-elf-objcopy -O binary kernel.elf kernel.bin

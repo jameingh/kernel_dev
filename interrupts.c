@@ -45,32 +45,38 @@ static volatile uint32_t key_count = 0;
 static volatile uint8_t shift_on_global = 0;
 static volatile uint8_t caps_on_global = 0;
 // 在第一行固定区域绘制状态栏（定宽、定域，避免滚屏与大面积刷新）：
-// 格式："Hz:xxx Ticks:xxxxxx Keys:xxxx Caps:X Shift:X"
+// 格式："Hz:xxx Keys:xxxx MemFree:xxxxx"
+extern uint32_t pmm_free_pages(void);
 static inline void draw_status(void) {
     volatile uint16_t* vga = (volatile uint16_t*)0xB8000;
-    char buf[48];
+    char buf[32];
     int p = 0;
     buf[p++] = 'H'; buf[p++] = 'z'; buf[p++] = ':';
     uint32_t v = pit_rate;
     char num3[3]; for (int i = 2; i >= 0; i--) { num3[i] = '0' + (v % 10); v /= 10; }
     for (int i = 0; i < 3; i++) buf[p++] = num3[i];
     buf[p++] = ' ';
-    buf[p++] = 'T'; buf[p++] = 'i'; buf[p++] = 'c'; buf[p++] = 'k'; buf[p++] = 's'; buf[p++] = ':';
-    v = pit_ticks; char num6[6]; for (int i = 5; i >= 0; i--) { num6[i] = '0' + (v % 10); v /= 10; }
-    for (int i = 0; i < 6; i++) buf[p++] = num6[i];
-    buf[p++] = ' ';
     buf[p++] = 'K'; buf[p++] = 'e'; buf[p++] = 'y'; buf[p++] = 's'; buf[p++] = ':';
     v = key_count; char num4[4]; for (int i = 3; i >= 0; i--) { num4[i] = '0' + (v % 10); v /= 10; }
     for (int i = 0; i < 4; i++) buf[p++] = num4[i];
     buf[p++] = ' ';
-    buf[p++] = 'C'; buf[p++] = 'a'; buf[p++] = 'p'; buf[p++] = 's'; buf[p++] = ':';
-    buf[p++] = caps_on_global ? 'Y' : 'N';
-    buf[p++] = ' ';
-    buf[p++] = 'S'; buf[p++] = 'h'; buf[p++] = 'i'; buf[p++] = 'f'; buf[p++] = 't'; buf[p++] = ':';
-    buf[p++] = shift_on_global ? 'Y' : 'N';
-    for (int i = 0; i < p; i++) {
-        vga[0 * 80 + 40 + i] = (uint16_t)buf[i] | 0x0F00;
+    buf[p++] = 'M'; buf[p++] = 'e'; buf[p++] = 'm'; buf[p++] = 'F'; buf[p++] = 'r'; buf[p++] = 'e'; buf[p++] = 'e'; buf[p++] = ':';
+    uint32_t mf = pmm_free_pages();
+    char num5[5]; for (int i = 4; i >= 0; i--) { num5[i] = '0' + (mf % 10); mf /= 10; }
+    for (int i = 0; i < 5; i++) buf[p++] = num5[i];
+    uint16_t attr = 0x0200;
+    for (int i = 50; i < 80; i++) {
+        vga[0 * 80 + i] = (uint16_t)' ' | attr;
     }
+    int start = 80 - p;
+    if (start < 50) start = 50;
+    for (int i = 0; i < p; i++) {
+        vga[0 * 80 + start + i] = (uint16_t)buf[i] | attr;
+    }
+}
+
+void status_refresh(void) {
+    draw_status();
 }
 
 // 将键盘扫描码（Set1）转换为 ASCII 字符：

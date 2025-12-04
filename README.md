@@ -63,6 +63,7 @@
 ```
 
 ## 学习文档
+- 说明：文档中的代码引用统一采用“文件:函数名”的跳转提示（如 `interrupts.c:irq_handler`），避免行号随代码改动而失效。
 - 第一阶段（引导与基础）
   - [week1.md](./week1.md)
   - [week2.md](./week2.md)
@@ -78,3 +79,6 @@
   - [PIC优先级排序和选择过程.md](./PIC优先级排序和选择过程.md)
   - [why_two_gdt.md](./why_two_gdt.md)
   - [week5.md](./week5.md)
+
+- 第三阶段（内存管理）
+  - [week6_pmm_theory.md](./week6_pmm_theory.md)

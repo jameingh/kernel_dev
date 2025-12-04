@@ -3,6 +3,7 @@ ENTRY(kmain) /* 指定程序的入口点是kmain函数 */
 SECTIONS
 {
     . = 0x10000; /* 设置代码段的起始地址为0x10000 */
+    _kernel_start = .;
 
     .text :
     {
@@ -18,4 +19,5 @@ SECTIONS
     {
         *(.bss) /* 所有输入文件的.bss段都放这里 */
     }
+    _kernel_end = .;
 }
