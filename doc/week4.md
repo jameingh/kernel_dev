@@ -9,20 +9,14 @@
 - C 层行为：异常统一打印并停机；断点 `int 3` 特殊显示；IRQ 发送 EOI 并打印向量号，临时忽略时钟刷屏。
 - 内核在启动流程中初始化 `GDT`、`IDT`、注册 ISR/IRQ，`sti` 使能中断，并触发 `int 3` 进行可视化验证。
 
-```text
-┌─────────────────────────────── 硬件到内核路径 ────────────────────────────────┐
-│ 设备/CPU 异常  ──>  CPU 查 IDT[n]  ──>  门项(0x8E)  ──>  isr/irq 汇编入口       │
-│                                        │           └─> common_stub 保存现场  │
-│                                        │                           │         │
-│                                        └────────────── push esp ───┘         │
-│                                                               │              │
-│                                              C: isr_handler/irq_handler      │
-│                                                               │              │
-│                           IRQ: 发送 EOI 到主/从 PIC           │              │
-│                                                               │              │
-│                                              恢复现场 iret 返回              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+![Hardware Path Diagram](/imgs/hardware_interrupt_path_diagram_1766473590100.png)
+
+### 流程说明
+1.  **硬件/异常触发**：CPU 暂停当前指令流。
+2.  **IDT 查表**：根据中断号获取 ISR 入口地址（`isr.asm`）。
+3.  **汇编桩（Stub）**：保存所有寄存器（`pusha`），构建 `struct registers`。
+4.  **C内核处理**：根据中断号分发给 `isr_handler` (异常) 或 `irq_handler` (设备)。
+5.  **EOI & 恢复**：如果是硬件中断发送 EOI，最后 `iret` 弹栈恢复现场。
 
 ## 启动与初始化
 - 内核主函数初始化顺序：`GDT` → `IDT` → `ISR/IRQ` → `PIT` → 使能中断。
@@ -38,14 +32,14 @@
   - IRQ `32–47`：在 `interrupts.c:irq_init` 注册 `irq0..irq15`。
 - 标志 `0x8E`：表示“存在位=1、DPL=0、类型=0xE（32位中断门）”，选择子 `0x08` 指向内核代码段。
 
-```text
-IDT[n] 门项布局（32位）
-- base_low   : 处理函数地址低 16 位
-- sel        : 段选择子（内核代码段 0x08）
-- always0    : 固定为 0
-- flags      : 0x8E（P=1,DPL=0,Type=1110b）
-- base_high  : 处理函数地址高 16 位
-```
+![IDT Gate Entry](/imgs/idt_gate_structure_diagram_1766473610221.png)
+
+### 门项细节
+- **Selector (16-31)**：必须指向内核代码段选择子（通常是 `0x08`），保证在内核特权级运行。
+- **Type (40-47)**：`0x8E` 是关键。
+    - `P=1`：存在。
+    - `DPL=0`：特权级 0（用户态不可直接调用，除非通过软中断门）。
+    - `Gate=0xE`：32位中断门（会自动关中断）。
 
 ## PIC 重映射与 IRQ 区间
 - 原始 8259 PIC 将 `IRQ0–7` 映射到 `0x08–0x0F`，与 CPU 异常区间 `0x00–0x1F` 冲突。
@@ -55,41 +49,81 @@ IDT[n] 门项布局（32位）
   - 发送 `ICW1/2/3/4` 完成重映射与 8086 模式设置。
   - 恢复原掩码，避免误启用未期望的 IRQ。
 
-```text
-IRQ 映射关系（重映射后）
-IRQ0  → IDT 32  (0x20)  时钟
-IRQ1  → IDT 33  (0x21)  键盘
-IRQ2  → IDT 34  (0x22)  级联
-IRQ3  → IDT 35  (0x23)  串口2
-IRQ4  → IDT 36  (0x24)  串口1
-IRQ5  → IDT 37  (0x25)  LPT2/保留
-IRQ6  → IDT 38  (0x26)  软盘
-IRQ7  → IDT 39  (0x27)  LPT1/保留
-IRQ8  → IDT 40  (0x28)  CMOS 实时钟
-IRQ9  → IDT 41  (0x29)  重用 IRQ2
-IRQ10 → IDT 42  (0x2A)  保留/设备
-IRQ11 → IDT 43  (0x2B)  保留/设备
-IRQ12 → IDT 44  (0x2C)  PS/2 鼠标
-IRQ13 → IDT 45  (0x2D)  FPU
-IRQ14 → IDT 46  (0x2E)  主 IDE
-IRQ15 → IDT 47  (0x2F)  从 IDE
+```mermaid
+classDiagram
+    direction LR
+    class HardwareIRQ {
+        IRQ0 : Timer
+        IRQ1 : Keyboard
+        IRQ8 : RTC
+        IRQ12 : Mouse
+        IRQ14 : Primary IDE
+    }
+    class IDTVector {
+        32 (0x20)
+        33 (0x21)
+        40 (0x28)
+        44 (0x2C)
+        46 (0x2E)
+    }
+    HardwareIRQ --|> IDTVector : Remap (+0x20)
+    note "避免冲突：\nIRQ0(0) + 0x20 = 32\n错开 CPU 异常 0-31"
 ```
+
+**完整映射表**：
+| IRQ   | 用途         | IDT 向量  | 备注      |
+| :---- | :----------- | :-------- | :-------- |
+| IRQ0  | **PIT 时钟** | 32 (0x20) | 系统心跳  |
+| IRQ1  | **Keyboard** | 33 (0x21) | PS/2 键盘 |
+| IRQ2  | 级联 8259    | 34 (0x22) | 连接从片  |
+| IRQ8  | CMOS RTC     | 40 (0x28) | 实时钟    |
+| IRQ12 | PS/2 Mouse   | 44 (0x2C) | 鼠标      |
+| IRQ14 | Disk 1       | 46 (0x2E) | 主硬盘    |
+| IRQ15 | Disk 2       | 47 (0x2F) | 从硬盘    |
 
 ## 汇编入口与通用桩
 - ISR/IRQ 模板：见 `isr.asm:ISR_NOERRCODE`、`isr.asm:ISR_ERRCODE`、`isr.asm:IRQ`。
 - 通用桩保存现场并切换到内核数据段：`isr.asm:isr_common_stub`、`isr.asm:irq_common_stub`。
 - 通过 `push esp` 向 C 层传递 `struct registers*`，返回路径 `iret` 同样在上述通用桩中实现。
 
-```text
-栈布局（进入 C 层前后，示意）
-┌───────────────┐  ← ESP
-│  gs,fs,es,ds  │  pusha+段寄存器保存
-│  通用寄存器   │
-│  err_code     │  ISR: 可能为占位 0；某些异常真实错误码
-│  int_no       │  ISR/IRQ 向量号（例如 0x21）
-└───────────────┘
-      ↓ push esp 传入 C：`struct registers*`
+```mermaid
+block-beta
+  columns 1
+  block:HighMem
+    space
+    EIP
+    CS
+    EFLAGS
+    ESP_Orig
+    SS_Orig
+  end
+  block:StubPush
+    Int_No
+    Err_Code
+  end
+  block:Pusha
+    EAX
+    ECX
+    EDX
+    EBX
+    ESP_Kern
+    EBP
+    ESI
+    EDI
+  end
+  block:Segs
+    DS
+    ES
+    FS
+    GS
+  end
+  HighMem -- "CPU自动压入" --> StubPush
+  StubPush -- "Stub压入" --> Pusha
+  Pusha -- "pusha指令" --> Segs
+  Segs -- "Low Memory" --> ESP_Current
 ```
+
+> **注**：`struct registers` 指针即指向栈顶（ESP_Current），C 语言通过这个指针可以访问并修改栈中保存的任何寄存器值（例如修改 EIP 实现任务切换）。
 
 ## C 层行为与可视化
 - 异常处理：`interrupts.c:isr_handler` 顶行显示 `EXC XX` 并停机。
@@ -98,11 +132,23 @@ IRQ15 → IDT 47  (0x2F)  从 IDE
   - 时钟 `IRQ0`：累加 `ticks` 并周期刷新顶行状态栏文本。
   - 键盘 `IRQ1`：读取 `0x60` 扫描码，处理 `Shift/Caps/Backspace/Enter` 并回显；其余 IRQ 打印向量号。
 
-```text
-异常 vs. IRQ 处理流程
-设备/异常 → IDT → isr/irq → 保存现场
-    ├─ 异常：显示/停机（int3 特殊）
-    └─ IRQ ：发送 EOI → 可选日志 → 返回
+```mermaid
+graph TD
+    A[中断发生 Interrupt] --> B{向量号 Vector?}
+    B -- "0-31 (Exception)" --> C[ISR Handler]
+    C --> D[打印异常信息]
+    D --> E[Halt/Panic 停机]
+    
+    B -- "32-47 (IRQ)" --> F[IRQ Handler]
+    F --> G{IRQ > 40?}
+    G -- Yes --> H[发送从片 EOI]
+    G -- No --> I[发送主片 EOI]
+    H --> I
+    I --> J[执行具体设备逻辑]
+    J --> K[iret 返回]
+    
+    style E fill:#f9f,stroke:#333,stroke-width:2px
+    style J fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
 ## 关键结构
