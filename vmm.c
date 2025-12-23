@@ -57,6 +57,20 @@ void vmm_init(void) {
     /* 让它指向同一个页表，这样访问 0xC0000000 就会落到物理 0x00000000 */
     pd[768] = pt_phys | PAGE_PRESENT | PAGE_RW;
 
+    /* [Heap] 映射 1MB 给堆 (Virtual 0xD0000000) */
+    /* Index = 0xD0000000 >> 22 = 832 */
+    uint32_t heap_pt_phys = pmm_alloc_page();
+    if (heap_pt_phys != 0) {
+        uint32_t* heap_pt = (uint32_t*)heap_pt_phys;
+        pd[832] = heap_pt_phys | PAGE_PRESENT | PAGE_RW;
+        
+        /* 映射 256 个页 (1MB) */
+        for (int i = 0; i < 256; i++) {
+            uint32_t phys = pmm_alloc_page();
+            heap_pt[i] = phys | PAGE_PRESENT | PAGE_RW;
+        }
+    }
+
     /* 5. 载入 CR3 并开启分页 */
     terminal_writestring("Loading CR3...\n");
     set_cr3(pd_phys);

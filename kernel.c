@@ -4,6 +4,7 @@
 #include "interrupts.h"
 #include "pmm.h"
 #include "vmm.h"
+#include "heap.h"
 
 void kmain(void) {
     // 初始化终端：设置默认颜色、禁用硬件光标，准备文本输出
@@ -31,6 +32,19 @@ void kmain(void) {
 
     terminal_writestring("Initializing VMM...\n");
     vmm_init();
+
+    terminal_writestring("Initializing Heap...\n");
+    kheap_init();
+
+    terminal_writestring("Testing Heap...\n");
+    void* ptrA = kmalloc(10);
+    void* ptrB = kmalloc(20);
+    terminal_writestring("Malloc A: "); if(ptrA) terminal_writestring("OK ");
+    terminal_writestring("Malloc B: "); if(ptrB) terminal_writestring("OK\n");
+    kfree(ptrA);
+    kfree(ptrB);
+    terminal_writestring("Free A&B OK\n\n");
+
 
     terminal_writestring("IDT initialized successfully!\n\n");
     status_refresh();
