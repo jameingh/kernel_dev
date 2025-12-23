@@ -84,6 +84,10 @@
   - [week6_pmm_theory.md](/doc/week6_pmm_theory.md)
   - [week7.md](/doc/week7.md)
   - [week7_advanced_mem_map.md](/doc/week7_advanced_mem_map.md)
+  - [week8.md](/doc/week8.md)
+
+- 第四阶段（进程管理）
+  - [week9.md](/doc/week9.md)
 
 
 ## 项目提示词
