@@ -171,16 +171,16 @@ irq_common_stub:
     mov gs, ax
     
     push esp        ; 传递 struct registers* 参数
-    call irq_handler ; 调用C处理函数
-    add esp, 4      ; 清理参数
+    call irq_handler ; 调用C处理函数 (返回新的 ESP 到 EAX)
+    mov esp, eax    ; <--- 关键点：切换栈指针 (Context Switch)
     
-    pop gs          ; 恢复段寄存器
+    pop gs          ; 恢复段寄存器 (从新栈)
     pop fs
     pop es
     pop ds
     popa            ; 恢复通用寄存器
     add esp, 8      ; 清理错误码和中断号
-    iret            ; 中断返回
+    iret            ; 中断返回 (弹出新栈的 EIP)
 
 ; 加载 IDT：C 层传入 idtp 指针，通过 lidt 生效
 idt_flush:

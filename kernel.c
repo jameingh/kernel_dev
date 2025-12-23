@@ -5,6 +5,11 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
+#include "process.h"
+
+/* Forward declarations */
+void task_a(void);
+void task_b(void);
 
 void kmain(void) {
     // 初始化终端：设置默认颜色、禁用硬件光标，准备文本输出
@@ -45,6 +50,13 @@ void kmain(void) {
     kfree(ptrB);
     terminal_writestring("Free A&B OK\n\n");
 
+    /* 多任务测试 */
+    process_init(); /* 初始化，当前变为 Idle 任务 */
+
+    process_create(task_a, "Task A");
+    process_create(task_b, "Task B");
+    
+    terminal_writestring("Tasks created. Entering infinite loop...\n");
 
     terminal_writestring("IDT initialized successfully!\n\n");
     status_refresh();
@@ -52,11 +64,26 @@ void kmain(void) {
     terminal_writestring("System ready! Interrupts enabled.\n");
     terminal_writestring("Press any key to test keyboard interrupt...\n");
     
-    // 启用中断：允许 CPU 响应外设与异常（此后可接收 IRQ0/IRQ1 等）
-    asm volatile ("sti");
-    
-    
-    while (1) {
-        // 主循环
+    // 启用中断 = 开始调度
+    asm volatile("sti");
+
+    // 主线程 (Idle)
+    while(1) {
+         asm volatile("hlt");
+    }
+}
+
+void task_a(void) {
+    while(1) {
+        terminal_putchar('A');
+        /* 简单的延时循环，模拟耗时任务 */
+        for(volatile int i=0; i<10000000; i++); 
+    }
+}
+
+void task_b(void) {
+    while(1) {
+        terminal_putchar('B');
+        for(volatile int i=0; i<10000000; i++);
     }
 }

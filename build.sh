@@ -17,10 +17,11 @@ x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c interrupts.c -o interrupts.o
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c pmm.c -o pmm.o
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c vmm.c -o vmm.o
 x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c heap.c -o heap.o
+x86_64-elf-gcc -m32 -ffreestanding -nostdlib -c process.c -o process.o
 
 # 链接所有目标文件
 # 预链接解决新增模块符号解析顺序问题
-x86_64-elf-ld -r -m elf_i386 -o core.o kernel.o interrupts.o pmm.o vmm.o heap.o
+x86_64-elf-ld -r -m elf_i386 -o core.o kernel.o interrupts.o pmm.o vmm.o heap.o process.o
 
 # 最终链接
 x86_64-elf-ld -m elf_i386 -T linker.ld -o kernel.elf \

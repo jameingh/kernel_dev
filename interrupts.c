@@ -1,6 +1,7 @@
 #include "interrupts.h"
 #include "terminal.h"
 #include "idt.h"
+#include "process.h"
 // 本文件负责：
 // - 异常处理入口（isr_handler）：任何异常均在屏幕顶行输出异常号并停机，便于早期诊断
 // - IRQ 分发（irq_handler）：按向量号处理 PIT(IRQ0)、键盘(IRQ1) 等，并向 PIC 发送 EOI
@@ -150,7 +151,7 @@ void pit_init(uint32_t hz) {
 // IRQ 分发：
 // - 先发 EOI（若为从 PIC 中断，需先向 0xA0 再向 0x20）
 // - 处理定时器与键盘分支；其余 IRQ 打印向量号
-void irq_handler(struct registers* regs) {
+struct registers* irq_handler(struct registers* regs) {
     if (regs->int_no >= 40) {
         outb(0xA0, 0x20);
     }
@@ -162,7 +163,8 @@ void irq_handler(struct registers* regs) {
         if ((pit_ticks % 10) == 0) {
             draw_status();
         }
-        return;
+        /* [关键改动] 调用调度器 */
+        return schedule(regs);
     }
 
     static uint8_t shift_on = 0;
@@ -170,14 +172,14 @@ void irq_handler(struct registers* regs) {
     // IRQ1：键盘。处理 Shift/Caps 修饰键状态，过滤 break 码，回显 make 码字符。
     if (regs->int_no == 33) {
         uint8_t sc = inb(0x60);
-        if (sc == 0x2A || sc == 0x36) { shift_on = 1; return; }
-        if (sc == 0xAA || sc == 0xB6) { shift_on = 0; return; }
-        if (sc == 0x3A) { caps_on ^= 1; caps_on_global = caps_on; return; }
-        if (sc & 0x80) return;
+        if (sc == 0x2A || sc == 0x36) { shift_on = 1; return regs; }
+        if (sc == 0xAA || sc == 0xB6) { shift_on = 0; return regs; }
+        if (sc == 0x3A) { caps_on ^= 1; caps_on_global = caps_on; return regs; }
+        if (sc & 0x80) return regs;
         char c = translate_scancode(sc, shift_on, caps_on);
         shift_on_global = shift_on;
         if (c) { terminal_putchar(c); key_count++; }
-        return;
+        return regs;
     }
 
     terminal_writestring("Received IRQ: ");
@@ -188,6 +190,7 @@ void irq_handler(struct registers* regs) {
     int_str[2] = '\0';
     terminal_writestring(int_str);
     terminal_putchar('\n');
+    return regs;
 }
 
 
