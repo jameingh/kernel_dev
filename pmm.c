@@ -32,6 +32,7 @@ void pmm_init(void) {
     /* 保留低端传统区与视频内存 */
     reserve_range(0x00000000, 0x000A0000); /* 低端传统区 */
     reserve_range(0x000A0000, 0x000C0000); /* 视频内存（含VGA） */
+    reserve_range(0x000C0000, 0x00100000); /* BIOS 扩展与系统 BIOS (C0000-FFFFF) */
 
     /* 保留内核镜像范围（含 .text/.data/.bss） */
     uint32_t kstart = (uint32_t)&_kernel_start;

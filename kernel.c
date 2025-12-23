@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "interrupts.h"
 #include "pmm.h"
+#include "vmm.h"
 
 void kmain(void) {
     // 初始化终端：设置默认颜色、禁用硬件光标，准备文本输出
@@ -27,8 +28,12 @@ void kmain(void) {
     
     terminal_writestring("Initializing PMM...\n");
     pmm_init();
-    status_refresh();
+
+    terminal_writestring("Initializing VMM...\n");
+    vmm_init();
+
     terminal_writestring("IDT initialized successfully!\n\n");
+    status_refresh();
     
     terminal_writestring("System ready! Interrupts enabled.\n");
     terminal_writestring("Press any key to test keyboard interrupt...\n");
