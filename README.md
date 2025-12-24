@@ -65,38 +65,36 @@
 ## 学习文档
 - 说明：文档中的代码引用统一采用“文件:函数名”的跳转提示（如 `interrupts.c:irq_handler`），避免行号随代码改动而失效。
 - 第一阶段（引导与基础）
-  - [week1.md](/doc/week1.md)
-  - [week2.md](/doc/week2.md)
-  - [week3.md](/doc/week3.md)
-  - [vga_terminal_summary.md](/doc/vga_terminal_summary.md)
-  - [troubleshooting_disk_error.md](/doc/troubleshooting_disk_error.md)
+  - [x] [week1.md](/doc/week1.md)
+  - [x] [week2.md](/doc/week2.md)
+  - [x] [week3.md](/doc/week3.md)
+  - [x] [vga_terminal_summary.md](/doc/vga_terminal_summary.md)
+  - [x] [troubleshooting_disk_error.md](/doc/troubleshooting_disk_error.md)
 
 - 第二阶段（神经系统）
-  - [real_vs_protected_mode.md](/doc/real_vs_protected_mode.md)
-  - [week4.md](/doc/week4.md)
-  - [x] Week 11 User Mode & System Calls
-- [x] Create `doc/week11_implementation.md` (Implementation Review) <!-- id: 15 -->
-  - [week4_idt_call_chain.md](/doc/week4_idt_call_chain.md)
-  - [idt的由来.md](/doc/idt的由来.md)
-  - [PIC优先级排序和选择过程.md](/doc/PIC优先级排序和选择过程.md)
-  - [why_two_gdt.md](/doc/why_two_gdt.md)
-  - [week5.md](/doc/week5.md)
+  - [x] [real_vs_protected_mode.md](/doc/real_vs_protected_mode.md)
+  - [x] [week4.md](/doc/week4.md)
+  - [x] [week4_idt_call_chain.md](/doc/week4_idt_call_chain.md)
+  - [x] [idt的由来.md](/doc/idt的由来.md)
+  - [x] [PIC优先级排序和选择过程.md](/doc/PIC优先级排序和选择过程.md)
+  - [x] [why_two_gdt.md](/doc/why_two_gdt.md)
+  - [x] [week5.md](/doc/week5.md)
 
 - 第三阶段（内存管理）
-  - [week6_pmm_theory.md](/doc/week6_pmm_theory.md)
-  - [week7.md](/doc/week7.md)
-  - [week7_advanced_mem_map.md](/doc/week7_advanced_mem_map.md)
-  - [week8.md](/doc/week8.md)
+  - [x] [week6_pmm_theory.md](/doc/week6_pmm_theory.md)
+  - [x] [week7.md](/doc/week7.md)
+  - [x] [week7_advanced_mem_map.md](/doc/week7_advanced_mem_map.md)
+  - [x] [week8.md](/doc/week8.md)
 
 - 第四阶段（进程管理）
-  - [week9.md](/doc/week9.md)
+  - [x] [week9.md](/doc/week9.md)
 
 - 第五阶段（存储与用户空间）
-  - [week10.md](/doc/week10.md)
-  - [week10_implementation.md](/doc/week10_implementation.md)
-  - [week10_appendix_scrolling.md](/doc/week10_appendix_scrolling.md)
-  - [week11.md](/doc/week11.md)
-  - [week11_implementation.md](/doc/week11_implementation.md)
+  - [x] [week10.md](/doc/week10.md)
+  - [x] [week10_implementation.md](/doc/week10_implementation.md)
+  - [x] [week10_appendix_scrolling.md](/doc/week10_appendix_scrolling.md)
+  - [x] [week11.md](/doc/week11.md)
+  - [x] [week11_implementation.md](/doc/week11_implementation.md)
 
 
 ## 项目提示词
