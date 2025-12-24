@@ -70,12 +70,26 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
 }
 
 // 处理换行：
-// - 列归零，行+1；到达底部后从顶部重新开始（简单环形，不滚屏）
-// - 如需滚屏，可改为上移一行并清空最后一行
+// - 列归零，行+1
+// - 如果到达底部，整体上移一行（滚屏）
 static void terminal_newline(void) {
     terminal.column = 0;
     if (++terminal.row == VGA_HEIGHT) {
-        terminal.row = 0;
+        // 滚屏逻辑：将后24行复制到前24行
+        for (size_t y = 1; y < VGA_HEIGHT; y++) {
+            for (size_t x = 0; x < VGA_WIDTH; x++) {
+                const size_t src_index = y * VGA_WIDTH + x;
+                const size_t dst_index = (y - 1) * VGA_WIDTH + x;
+                terminal.buffer[dst_index] = terminal.buffer[src_index];
+            }
+        }
+        // 清空最后一行
+        const size_t last_row_start = (VGA_HEIGHT - 1) * VGA_WIDTH;
+        for (size_t x = 0; x < VGA_WIDTH; x++) {
+            terminal.buffer[last_row_start + x] = vga_entry(' ', terminal.color);
+        }
+        // 保持在最后一行
+        terminal.row = VGA_HEIGHT - 1;
     }
 }
 
