@@ -6,6 +6,7 @@
 #include "vmm.h"
 #include "heap.h"
 #include "process.h"
+#include "initrd.h"
 
 /* Forward declarations */
 void task_a(void);
@@ -49,6 +50,26 @@ void kmain(void) {
     kfree(ptrA);
     kfree(ptrB);
     terminal_writestring("Free A&B OK\n\n");
+
+    /* 文件系统测试 */
+    terminal_writestring("Initializing InitRD...\n");
+    fs_root = initrd_init();
+    
+    if (fs_root) {
+        terminal_writestring("Listing files in /:\n");
+        fs_node_t* node = vfs_finddir(fs_root, "hello.txt");
+        if (node) {
+            terminal_writestring("Found: hello.txt\n");
+            uint8_t buf[32];
+            uint32_t sz = vfs_read(node, 0, 32, buf);
+            buf[sz] = 0; // Null terminate
+            terminal_writestring("Content: ");
+            terminal_writestring((char*)buf);
+            terminal_putchar('\n');
+        } else {
+            terminal_writestring("File hello.txt not found!\n");
+        }
+    }
 
     /* 多任务测试 */
     process_init(); /* 初始化，当前变为 Idle 任务 */
