@@ -74,6 +74,8 @@
 - 第二阶段（神经系统）
   - [real_vs_protected_mode.md](/doc/real_vs_protected_mode.md)
   - [week4.md](/doc/week4.md)
+  - [x] Week 11 User Mode & System Calls
+- [x] Create `doc/week11_implementation.md` (Implementation Review) <!-- id: 15 -->
   - [week4_idt_call_chain.md](/doc/week4_idt_call_chain.md)
   - [idt的由来.md](/doc/idt的由来.md)
   - [PIC优先级排序和选择过程.md](/doc/PIC优先级排序和选择过程.md)
@@ -93,6 +95,8 @@
   - [week10.md](/doc/week10.md)
   - [week10_implementation.md](/doc/week10_implementation.md)
   - [week10_appendix_scrolling.md](/doc/week10_appendix_scrolling.md)
+  - [week11.md](/doc/week11.md)
+  - [week11_implementation.md](/doc/week11_implementation.md)
 
 
 ## 项目提示词

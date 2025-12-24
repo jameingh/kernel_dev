@@ -2,6 +2,7 @@
 #include "heap.h"
 #include "terminal.h"
 #include <stddef.h>
+#include "gdt.h"
 
 /* 全局进程链表 */
 static process_t* process_list = NULL;
@@ -22,6 +23,7 @@ void process_init(void) {
     for(int i=0; i<PROCESS_NAME_LEN && name[i]; i++) main_proc->name[i] = name[i];
     
     main_proc->next = main_proc; /* 循环链表：自己指向自己 */
+    main_proc->kernel_stack_top = 0x90000; // 初始栈
     
     process_list = main_proc;
     current_process = main_proc;
@@ -92,8 +94,54 @@ process_t* process_create(void (*entry_point)(void), const char* name) {
     
     /* 保存最终的 ESP 到 PCB */
     proc->esp = (uint32_t)stack_ptr;
+    proc->kernel_stack_top = esp;
     
     /* 4. 插入链表 (插入到 head 后面) */
+    proc->next = process_list->next;
+    process_list->next = proc;
+    
+    return proc;
+}
+
+process_t* process_create_user(void (*entry_point)(void), const char* name) {
+    process_t* proc = (process_t*)kmalloc(sizeof(process_t));
+    proc->pid = next_pid++;
+    
+    int i = 0;
+    for(; i < PROCESS_NAME_LEN-1 && name[i]; i++) proc->name[i] = name[i];
+    proc->name[i] = 0;
+    
+    /* 1. 分配独立的内核栈 (用于中断发生时切换) */
+    void* kstack = kmalloc(4096);
+    uint32_t kstack_top = (uint32_t)kstack + 4096;
+    proc->kernel_stack_top = kstack_top;
+
+    /* 2. 分配独立的用户栈 (用户程序平时使用的栈) */
+    void* ustack = kmalloc(4096);
+    uint32_t ustack_top = (uint32_t)ustack + 4096;
+
+    uint32_t* stack_ptr = (uint32_t*)kstack_top;
+    
+    /* Ring 3 IRET Frame (SS, ESP, EFLAGS, CS, EIP) */
+    *(--stack_ptr) = 0x23;          /* SS (User Data 0x20 | 3) */
+    *(--stack_ptr) = ustack_top;    /* User ESP (现在指向独立的用户栈) */
+    *(--stack_ptr) = 0x202;         /* EFLAGS (IF=1) */
+    *(--stack_ptr) = 0x1B;          /* CS (User Code 0x18 | 3) */
+    *(--stack_ptr) = (uint32_t)entry_point; /* EIP */
+    
+    /* Dummy Error Code & Int No */
+    *(--stack_ptr) = 0; 
+    *(--stack_ptr) = 0; 
+    
+    /* POPA Frame (通用寄存器初始清零) */
+    for(int j=0; j<8; j++) *(--stack_ptr) = 0;
+    
+    /* 段寄存器 (Ring 3) */
+    for(int j=0; j<4; j++) *(--stack_ptr) = 0x23; 
+    
+    proc->esp = (uint32_t)stack_ptr;
+    
+    /* 插入链表 */
     proc->next = process_list->next;
     process_list->next = proc;
     
@@ -126,6 +174,10 @@ struct registers* schedule(struct registers* current_regs) {
     /* 简单地移动到下一个 */
     current_process = current_process->next;
     
-    /* 3. 返回新任务的栈指针 */
+    /* 3. 更新 TSS 中的内核栈 */
+    /* 当从这个新任务的 User Mode 发生中断时，CPU 会自动切换到这个 esp0 */
+    tss_set_stack(current_process->kernel_stack_top);
+    
+    /* 4. 返回新任务的栈指针 */
     return (struct registers*)current_process->esp;
 }

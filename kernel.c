@@ -11,6 +11,7 @@
 /* Forward declarations */
 void task_a(void);
 void task_b(void);
+void user_task(void);
 
 void kmain(void) {
     // 初始化终端：设置默认颜色、禁用硬件光标，准备文本输出
@@ -76,6 +77,7 @@ void kmain(void) {
 
     process_create(task_a, "Task A");
     process_create(task_b, "Task B");
+    process_create_user(user_task, "User Task");
     
     terminal_writestring("Tasks created. Entering infinite loop...\n");
 
@@ -106,5 +108,20 @@ void task_b(void) {
     while(1) {
         terminal_putchar('B');
         for(volatile int i=0; i<10000000; i++);
+    }
+}
+
+void user_task(void) {
+    char* msg = " [Syscall from Ring 3!] ";
+    while(1) {
+        // 使用汇编发起系统调用
+        // EAX = 1 (write), EBX = msg
+        asm volatile (
+            "mov $1, %%eax\n"
+            "mov %0, %%ebx\n"
+            "int $0x80\n"
+            : : "r"(msg) : "eax", "ebx"
+        );
+        for(volatile int i=0; i<20000000; i++);
     }
 }

@@ -13,4 +13,6 @@ gdt_flush:
     
     jmp 0x08:.flush   ; 长跳转刷新CS
 .flush:
+    mov ax, 0x28      ; TSS 选择子 是 0x28 (5*8)
+    ltr ax            ; 加载任务寄存器
     ret

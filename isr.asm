@@ -30,6 +30,8 @@
 [global isr29]
 [global isr30]
 [global isr31]
+[global isr128]
+
 
 [global irq0]
 [global irq1]
@@ -55,14 +57,14 @@
 ; 进入时压入“错误码占位”和“中断号”，供 C 层 isr_handler 读取。
 %macro ISR_NOERRCODE 1
 isr%1:
-    push byte 0     ; 压入错误码占位符
-    push byte %1    ; 压入中断号
+    push 0          ; 压入错误码占位符
+    push %1         ; 压入中断号
     jmp isr_common_stub
 %endmacro
 
 %macro ISR_ERRCODE 1
 isr%1:
-    push byte %1    ; 压入中断号
+    push %1         ; 压入中断号
     jmp isr_common_stub
 %endmacro
 
@@ -70,8 +72,8 @@ isr%1:
 %macro IRQ 2
 ;global irq%1
 irq%1:
-    push byte 0     ; 压入错误码占位符
-    push byte %2    ; 压入中断号
+    push 0          ; 压入错误码占位符
+    push %2         ; 压入中断号
     jmp irq_common_stub
 %endmacro
 
@@ -108,6 +110,8 @@ ISR_NOERRCODE 28
 ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
+ISR_NOERRCODE 128
+
 
 ; 定义所有IRQ (IRQ0-7映射到ISR32-39, IRQ8-15映射到ISR40-47)
 IRQ 0, 32

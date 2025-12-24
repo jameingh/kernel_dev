@@ -2,6 +2,7 @@
 #include "terminal.h"
 #include "idt.h"
 #include "process.h"
+#include "syscall.h"
 // 本文件负责：
 // - 异常处理入口（isr_handler）：任何异常均在屏幕顶行输出异常号并停机，便于早期诊断
 // - IRQ 分发（irq_handler）：按向量号处理 PIT(IRQ0)、键盘(IRQ1) 等，并向 PIC 发送 EOI
@@ -23,6 +24,11 @@ static inline uint8_t inb(uint16_t port) {
 // 说明：异常多发生在终端初始化之前，为保证可视化，使用直写 VGA 顶行而非终端 API。
 // 行为：显示 "EXC XX"（两位十六进制异常号），随后进入 hlt 死循环，防止屏幕抖动。
 void isr_handler(struct registers* regs) {
+    if (regs->int_no == 128) {
+        syscall_handler(regs);
+        return;
+    }
+
     volatile uint16_t* vga = (volatile uint16_t*)0xB8000;
     const char hex[] = "0123456789ABCDEF";
     vga[0] = (uint16_t)'E' | 0x0C00;
@@ -229,6 +235,7 @@ void isr_init(void) {
     idt_set_gate(29, (uint32_t)isr29, 0x08, 0x8E);
     idt_set_gate(30, (uint32_t)isr30, 0x08, 0x8E);
     idt_set_gate(31, (uint32_t)isr31, 0x08, 0x8E);
+    idt_set_gate(128, (uint32_t)isr128, 0x08, 0xEE); // DPL=3 for syscalls!
 }
 
 

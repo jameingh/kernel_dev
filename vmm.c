@@ -36,25 +36,25 @@ void vmm_init(void) {
 
     /* 2. 清空页目录 */
     for (int i = 0; i < 1024; i++) {
-        pd[i] = 0x00000002; /* RW, Supervisor, Not Present */
+        // 设置为 User 权限，具体是否 Present 由 PT 决定
+        pd[i] = 0x00000006; /* RW, User, Not Present */
     }
 
     /* 3. 填充第一个页表 (Identity Mapping 0-4MB) */
     /* 每一个 PTE 映射 4KB */
     /* 0x00000000 -> 0x00000000, 0x00001000 -> 0x00001000 ... */
     for (int i = 0; i < 1024; i++) {
-        pt[i] = (i * PAGE_SIZE) | PAGE_PRESENT | PAGE_RW;
+        // 恒等映射区：允许用户态访问（包含了 kernel 代码和 user_task）
+        pt[i] = (i * PAGE_SIZE) | PAGE_PRESENT | PAGE_RW | PAGE_USER;
     }
 
     /* 4. 填写页目录项 (Reference the Page Table) */
 
     /* [Identity Mapping] 映射低端 4MB (Virtual 0x00000000 -> 0x003FFFFF) */
-    /* Index 0 对应虚拟地址 0x00000000 起始的 4MB */
-    pd[0] = pt_phys | PAGE_PRESENT | PAGE_RW;
+    pd[0] = pt_phys | PAGE_PRESENT | PAGE_RW | PAGE_USER;
 
     /* [Higher-half Kernel] 映射高端 4MB (Virtual 0xC0000000 -> 0xC03FFFFF) */
-    /* 0xC0000000 >> 22 = Index 768 */
-    /* 让它指向同一个页表，这样访问 0xC0000000 就会落到物理 0x00000000 */
+    // 内核高半空间可以保持为 Supervisor (不加 PAGE_USER)
     pd[768] = pt_phys | PAGE_PRESENT | PAGE_RW;
 
     /* [Heap] 映射 1MB 给堆 (Virtual 0xD0000000) */
@@ -62,12 +62,14 @@ void vmm_init(void) {
     uint32_t heap_pt_phys = pmm_alloc_page();
     if (heap_pt_phys != 0) {
         uint32_t* heap_pt = (uint32_t*)heap_pt_phys;
-        pd[832] = heap_pt_phys | PAGE_PRESENT | PAGE_RW;
+        // PDE 必须开启 User 位
+        pd[832] = heap_pt_phys | PAGE_PRESENT | PAGE_RW | PAGE_USER;
         
         /* 映射 256 个页 (1MB) */
         for (int i = 0; i < 256; i++) {
             uint32_t phys = pmm_alloc_page();
-            heap_pt[i] = phys | PAGE_PRESENT | PAGE_RW;
+            // 堆内存允许用户态访问（因为用户栈在这里）
+            heap_pt[i] = phys | PAGE_PRESENT | PAGE_RW | PAGE_USER;
         }
     }
 

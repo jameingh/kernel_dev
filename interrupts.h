@@ -44,6 +44,8 @@ extern void isr28(void);
 extern void isr29(void);
 extern void isr30(void);
 extern void isr31(void);
+extern void isr128(void);
+
 
 // IRQ函数声明 (在isr.asm中定义)
 extern void irq0(void);
