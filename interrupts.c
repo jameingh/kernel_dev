@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "process.h"
 #include "syscall.h"
+#include "shell.h"
 // 本文件负责：
 // - 异常处理入口（isr_handler）：任何异常均在屏幕顶行输出异常号并停机，便于早期诊断
 // - IRQ 分发（irq_handler）：按向量号处理 PIT(IRQ0)、键盘(IRQ1) 等，并向 PIC 发送 EOI
@@ -184,7 +185,7 @@ struct registers* irq_handler(struct registers* regs) {
         if (sc & 0x80) return regs;
         char c = translate_scancode(sc, shift_on, caps_on);
         shift_on_global = shift_on;
-        if (c) { terminal_putchar(c); key_count++; }
+        if (c) { shell_input(c); key_count++; }
         return regs;
     }
 

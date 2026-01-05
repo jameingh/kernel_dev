@@ -7,6 +7,7 @@
 #include "heap.h"
 #include "process.h"
 #include "initrd.h"
+#include "shell.h"
 
 /* Forward declarations */
 void task_a(void);
@@ -84,6 +85,9 @@ void kmain(void) {
     terminal_writestring("IDT initialized successfully!\n\n");
     status_refresh();
     
+    /* 初始化 Shell */
+    shell_init();
+
     terminal_writestring("System ready! Interrupts enabled.\n");
     terminal_writestring("Press any key to test keyboard interrupt...\n");
     

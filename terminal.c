@@ -1,5 +1,6 @@
 #include "terminal.h"
 #include <stddef.h>
+#include "string.h"
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
@@ -15,15 +16,6 @@ static inline void outb(uint16_t port, uint8_t val) {
 static void terminal_disable_cursor(void) {
     outb(0x3D4, 0x0A);
     outb(0x3D5, 0x20);
-}
-
-// 字符串长度函数
-size_t strlen(const char* str) {
-    size_t len = 0;
-    while (str[len]) {
-        len++;
-    }
-    return len;
 }
 
 // 合并前景色和背景色
