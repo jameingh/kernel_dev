@@ -78,16 +78,16 @@ x86_64-elf-gcc --version
   - [x] [week1.md](/doc/week1.md)
   - [x] [week2.md](/doc/week2.md)
   - [x] [week3.md](/doc/week3.md)
-  - [x] [vga_terminal_summary.md](/doc/vga_terminal_summary.md)
-  - [x] [troubleshooting_disk_error.md](/doc/troubleshooting_disk_error.md)
+  - [x] [week3_vga_terminal_summary.md](/doc/week3_vga_terminal_summary.md)
+  - [x] [week3_troubleshooting_disk_error.md](/doc/week3_troubleshooting_disk_error.md)
+  - [x] [week3_real_vs_protected_mode.md](/doc/week3_real_vs_protected_mode.md)
 
 - 第二阶段（神经系统）
-  - [x] [real_vs_protected_mode.md](/doc/real_vs_protected_mode.md)
   - [x] [week4.md](/doc/week4.md)
   - [x] [week4_idt_call_chain.md](/doc/week4_idt_call_chain.md)
-  - [x] [idt的由来.md](/doc/idt的由来.md)
-  - [x] [PIC优先级排序和选择过程.md](/doc/PIC优先级排序和选择过程.md)
-  - [x] [why_two_gdt.md](/doc/why_two_gdt.md)
+  - [x] [week4_ idt的由来.md](/doc/week4_idt的由来.md)
+  - [x] [week4_pic优先级排序和选择过程.md](/doc/week4_pic优先级排序和选择过程.md)
+  - [x] [week4_why_two_gdt.md](/doc/week4_why_two_gdt.md)
   - [x] [week5.md](/doc/week5.md)
 
 - 第三阶段（内存管理）
@@ -98,6 +98,7 @@ x86_64-elf-gcc --version
 
 - 第四阶段（进程管理）
   - [x] [week9.md](/doc/week9.md)
+  - [x] [week9_implementation.md](/doc/week9_implementation.md)
 
 - 第五阶段（存储与用户空间）
   - [x] [week10.md](/doc/week10.md)
