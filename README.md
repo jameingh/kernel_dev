@@ -96,6 +96,7 @@
   - [x] [week11.md](/doc/week11.md)
   - [x] [week11_implementation.md](/doc/week11_implementation.md)
   - [x] [week12.md](/doc/week12.md)
+  - [x] [week12_implementation.md](/doc/week12_implementation.md)
 
 
 ## 项目提示词
@@ -105,7 +106,7 @@
 - 不要直接给出代码，要文档先行
 - 涉及到流程图、图示的地方用markdown+mermaid彩图绘制
 - mermaid中的subgraph 的标题和节点标签中的特殊字符用双引号括起来，防止解析器报错
-- mermaid中的节点标签为包含特殊字符（如 #、/、:）和中文的节点标签添加双引号
+- mermaid中的节点标签为包含特殊字符（如 #、/、:、(、)、）和中文的节点标签添加双引号
 - 涉及到多个文件改动的小结，给出核心内容的markdown+diff彩色对比示例
 - 专业名词请给出中文解释
 - 抽象的地方添加详细的图文解释
