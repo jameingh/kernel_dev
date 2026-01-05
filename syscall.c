@@ -14,6 +14,12 @@ struct registers* syscall_handler(struct registers* regs) {
         sys_write((char*)regs->ebx);
     } else if (regs->eax == 2) { // 约定 2 为 yield
         return schedule(regs);
+    } else if (regs->eax == 3) { // 约定 3 为 sleep
+        // EBX = ms
+        uint32_t ticks = regs->ebx / 10;
+        if (ticks == 0) ticks = 1;
+        process_sleep(ticks);
+        return schedule(regs);
     }
     return regs;
 }

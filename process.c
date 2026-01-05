@@ -24,6 +24,8 @@ void process_init(void) {
     
     main_proc->next = main_proc; /* 循环链表：自己指向自己 */
     main_proc->kernel_stack_top = 0x90000; // 初始栈
+    main_proc->state = STATE_READY;
+    main_proc->sleep_ticks = 0;
     
     process_list = main_proc;
     current_process = main_proc;
@@ -95,6 +97,8 @@ process_t* process_create(void (*entry_point)(void), const char* name) {
     /* 保存最终的 ESP 到 PCB */
     proc->esp = (uint32_t)stack_ptr;
     proc->kernel_stack_top = esp;
+    proc->state = STATE_READY;
+    proc->sleep_ticks = 0;
     
     /* 4. 插入链表 (插入到 head 后面) */
     proc->next = process_list->next;
@@ -140,6 +144,8 @@ process_t* process_create_user(void (*entry_point)(void), const char* name) {
     for(int j=0; j<4; j++) *(--stack_ptr) = 0x23; 
     
     proc->esp = (uint32_t)stack_ptr;
+    proc->state = STATE_READY;
+    proc->sleep_ticks = 0;
     
     /* 插入链表 */
     proc->next = process_list->next;
@@ -171,8 +177,14 @@ struct registers* schedule(struct registers* current_regs) {
     current_process->esp = (uint32_t)current_regs;
     
     /* 2. 轮转调度 (Round Robin) */
-    /* 简单地移动到下一个 */
-    current_process = current_process->next;
+    /* 循环查找下一个处于 READY 状态的进程 */
+    process_t* next = current_process->next;
+    while (next->state != STATE_READY) {
+        next = next->next;
+        /* 安全保障：PID 0 (Kernel_Idle) 永远是 READY 的，
+           所以这个循环一定能退出来，不会死循环。 */
+    }
+    current_process = next;
     
     /* 3. 更新 TSS 中的内核栈 */
     /* 当从这个新任务的 User Mode 发生中断时，CPU 会自动切换到这个 esp0 */
@@ -180,4 +192,30 @@ struct registers* schedule(struct registers* current_regs) {
     
     /* 4. 返回新任务的栈指针 */
     return (struct registers*)current_process->esp;
+}
+
+void process_update_sleep_ticks(void) {
+    if (!process_list) return;
+
+    process_t* first = process_list;
+    process_t* curr = first;
+    
+    do {
+        if (curr->state == STATE_SLEEPING) {
+            if (curr->sleep_ticks > 0) {
+                curr->sleep_ticks--;
+            }
+            if (curr->sleep_ticks == 0) {
+                curr->state = STATE_READY;
+            }
+        }
+        curr = curr->next;
+    } while (curr != first);
+}
+
+void process_sleep(uint32_t ticks) {
+    if (current_process && current_process->pid != 0) {
+        current_process->state = STATE_SLEEPING;
+        current_process->sleep_ticks = ticks;
+    }
 }

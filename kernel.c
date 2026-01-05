@@ -126,12 +126,21 @@ void user_task(void) {
     );
 
     while(1) {
-        // 使用汇编发起 Yield 系统调用
-        // EAX = 2 (yield)
+        // 使用汇编发起 Sleep 系统调用
+        // EAX = 3 (sleep), EBX = 500 (ms)
         asm volatile (
-            "mov $2, %%eax\n"
+            "mov $3, %%eax\n"
+            "mov $500, %%ebx\n"
             "int $0x80\n"
-            : : : "eax"
+            : : : "eax", "ebx"
+        );
+
+        // 睡醒后打印一下，证明运行了
+        asm volatile (
+            "mov $1, %%eax\n"
+            "mov %0, %%ebx\n"
+            "int $0x80\n"
+            : : "r"(".") : "eax", "ebx"
         );
     }
 }

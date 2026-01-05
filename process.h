@@ -4,10 +4,15 @@
 
 #define PROCESS_NAME_LEN 32
 
+#define STATE_READY    0
+#define STATE_SLEEPING 1
+
 typedef struct process {
     uint32_t pid;
     uint32_t esp;              /* 当前保存的栈指针 (struct registers*) */
     uint32_t kernel_stack_top; /* 初始/基础内核栈顶 (用于 TSS.esp0) */
+    uint32_t state;            /* 进程状态 (READY, SLEEPING 等) */
+    uint32_t sleep_ticks;      /* 休眠剩余滴答数 */
     char name[PROCESS_NAME_LEN];
     struct process* next;
 } process_t;
@@ -23,3 +28,9 @@ process_t* process_create_user(void (*entry_point)(void), const char* name);
 
 /* 调度函数 (被时钟中断调用) */
 struct registers* schedule(struct registers* current_regs);
+
+/* 更新所有进程的休眠计时 (由时钟中断调用) */
+void process_update_sleep_ticks(void);
+
+/* 使当前进程进入休眠 (由系统调用调用) */
+void process_sleep(uint32_t ticks);

@@ -27,7 +27,18 @@
 [global isr17]  ; 对齐检查
 [global isr18]  ; 机器检查
 [global isr19]  ; SIMD 浮点异常
-[global isr20-isr31] ; 预留
+[global isr20]
+[global isr21]
+[global isr22]
+[global isr23]
+[global isr24]
+[global isr25]
+[global isr26]
+[global isr27]
+[global isr28]
+[global isr29]
+[global isr30]
+[global isr31]
 [global isr128] ; 系统调用 (0x80)
 
 
