@@ -126,8 +126,12 @@ void user_task(void) {
     );
 
     while(1) {
-        /* 用户态 (Ring 3) 禁止使用 hlt 指令，否则会导致 General Protection Fault */
-        /* 这里使用简单的忙等待 */
-        for(volatile int i=0; i<1000000; i++); 
+        // 使用汇编发起 Yield 系统调用
+        // EAX = 2 (yield)
+        asm volatile (
+            "mov $2, %%eax\n"
+            "int $0x80\n"
+            : : : "eax"
+        );
     }
 }

@@ -69,7 +69,7 @@ extern void irq15(void);
 void isr_init(void);
 void irq_init(void);
 void pit_init(uint32_t hz);
-void isr_handler(struct registers* regs);
+struct registers* isr_handler(struct registers* regs);
 struct registers* irq_handler(struct registers* regs);
 void status_refresh(void);
 

@@ -4,6 +4,6 @@
 #include "interrupts.h"
 
 void syscall_init(void);
-void syscall_handler(struct registers* regs);
+struct registers* syscall_handler(struct registers* regs);
 
 #endif

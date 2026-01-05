@@ -149,9 +149,9 @@ isr_common_stub:
     mov fs, ax
     mov gs, ax
     
-    push esp        ; 传递 struct registers* 参数（包含段寄存器、通用寄存器、int_no、err_code）
-    call isr_handler ; 调用C处理函数
-    add esp, 4      ; 清理参数
+    push esp        ; 传递 struct registers* 参数
+    call isr_handler ; 调用C处理函数 (现在返回 struct registers*)
+    mov esp, eax    ; <--- 允许在系统调用路径下切换上下文
     
     pop gs          ; 恢复段寄存器
     pop fs

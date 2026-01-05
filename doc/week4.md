@@ -9,7 +9,7 @@
 - C 层行为：异常统一打印并停机；断点 `int 3` 特殊显示；IRQ 发送 EOI 并打印向量号，临时忽略时钟刷屏。
 - 内核在启动流程中初始化 `GDT`、`IDT`、注册 ISR/IRQ，`sti` 使能中断，并触发 `int 3` 进行可视化验证。
 
-![Hardware Path Diagram](/imgs/hardware_interrupt_path_diagram_1766473590100.png)
+![Hardware Path Diagram](/images/hardware_interrupt_path_diagram_1766473590100.png)
 
 ### 流程说明
 1.  **硬件/异常触发**：CPU 暂停当前指令流。
@@ -32,7 +32,7 @@
   - IRQ `32–47`：在 `interrupts.c:irq_init` 注册 `irq0..irq15`。
 - 标志 `0x8E`：表示“存在位=1、DPL=0、类型=0xE（32位中断门）”，选择子 `0x08` 指向内核代码段。
 
-![IDT Gate Entry](/imgs/idt_gate_structure_diagram_1766473610221.png)
+![IDT Gate Entry](/images/idt_gate_structure_diagram_1766473610221.png)
 
 ### 门项细节
 - **Selector (16-31)**：必须指向内核代码段选择子（通常是 `0x08`），保证在内核特权级运行。

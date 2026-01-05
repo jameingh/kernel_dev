@@ -17,7 +17,7 @@ LBA supported
 Loading kernel...Disk error! Code: 0xJMx
 ```
 
-![错误截图](/imgs/20251202094700.jpg)
+![错误截图](/images/20251202094700.jpg)
 
 ---
 

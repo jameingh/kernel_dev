@@ -24,10 +24,9 @@ static inline uint8_t inb(uint16_t port) {
 // 中断服务例程（异常路径）：
 // 说明：异常多发生在终端初始化之前，为保证可视化，使用直写 VGA 顶行而非终端 API。
 // 行为：显示 "EXC XX"（两位十六进制异常号），随后进入 hlt 死循环，防止屏幕抖动。
-void isr_handler(struct registers* regs) {
+struct registers* isr_handler(struct registers* regs) {
     if (regs->int_no == 128) {
-        syscall_handler(regs);
-        return;
+        return syscall_handler(regs);
     }
 
     volatile uint16_t* vga = (volatile uint16_t*)0xB8000;
@@ -39,6 +38,7 @@ void isr_handler(struct registers* regs) {
     vga[4] = (uint16_t)hex[(regs->int_no >> 4) & 0xF] | 0x0C00;
     vga[5] = (uint16_t)hex[regs->int_no & 0xF] | 0x0C00;
     while(1) { asm volatile ("hlt"); }
+    return regs; // 不会到达这里
 }
 
 

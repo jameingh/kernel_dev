@@ -28,7 +28,7 @@
   - 空闲栈（free list/stack）：将空闲页的物理页号（PFN）压栈。优点：分配/释放 O(1)；缺点：连续块分配与合并复杂。
 - 本阶段选择：位图优先（更直观、统计简单）；可在后续加入“空闲栈”作为快速路径。
 
-![PMM Layout](/imgs/pmm_memory_layout_diagram_1766470125355.png)
+![PMM Layout](/images/pmm_memory_layout_diagram_1766470125355.png)
 
 ### 图解：物理内存就像酒店管理
 - **左侧（物理内存/房间）**：
@@ -59,7 +59,7 @@
    - 位图所在区域
 4) 维护统计：`pmm_total_pages`、`pmm_free_pages`。
 
-![PMM Init Flow](/imgs/pmm_init_flow_diagram_1766472003530.png)
+![PMM Init Flow](/images/pmm_init_flow_diagram_1766472003530.png)
 
 ### 流程拆解
 1.  **Set Limit**：根据物理探测或手动设定，划定这是一个多大的“酒店”（如 128MB）。
@@ -76,7 +76,7 @@
 - `pmm_alloc_contiguous(n)`：分配 n 连续页（线性扫描位图的连续 1 区段）。
 - `pmm_total_pages` / `pmm_free_pages`：查询总页与空闲页统计。
 
-![Alloc/Free Logic](/imgs/pmm_alloc_free_diagram_1766472024876.png)
+![Alloc/Free Logic](/images/pmm_alloc_free_diagram_1766472024876.png)
 
 ### 操作逻辑
 - **Alloc Page (上图)**：
