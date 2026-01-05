@@ -101,31 +101,33 @@ void kmain(void) {
 }
 
 void task_a(void) {
+    terminal_writestring("Task A started.\n");
     while(1) {
-        terminal_putchar('A');
-        /* 简单的延时循环，模拟耗时任务 */
-        for(volatile int i=0; i<10000000; i++); 
+        /* 内核态允许使用 hlt 以节省 CPU */
+        asm volatile("hlt");
     }
 }
 
 void task_b(void) {
+    terminal_writestring("Task B started.\n");
     while(1) {
-        terminal_putchar('B');
-        for(volatile int i=0; i<10000000; i++);
+        asm volatile("hlt");
     }
 }
 
 void user_task(void) {
     char* msg = " [Syscall from Ring 3!] ";
+    // 使用汇编发起系统调用
+    asm volatile (
+        "mov $1, %%eax\n"
+        "mov %0, %%ebx\n"
+        "int $0x80\n"
+        : : "r"(msg) : "eax", "ebx"
+    );
+
     while(1) {
-        // 使用汇编发起系统调用
-        // EAX = 1 (write), EBX = msg
-        asm volatile (
-            "mov $1, %%eax\n"
-            "mov %0, %%ebx\n"
-            "int $0x80\n"
-            : : "r"(msg) : "eax", "ebx"
-        );
-        for(volatile int i=0; i<20000000; i++);
+        /* 用户态 (Ring 3) 禁止使用 hlt 指令，否则会导致 General Protection Fault */
+        /* 这里使用简单的忙等待 */
+        for(volatile int i=0; i<1000000; i++); 
     }
 }
