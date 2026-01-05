@@ -57,6 +57,16 @@
   - **目标**: 交互式 Shell。
   - **详情**: 基本的命令行接口。
 
+## 安装环境依赖
+
+```bash
+brew install nasm
+brew install qemu
+brew install i386-elf-gcc
+brew --prefix i386-elf-gcc
+x86_64-elf-gcc --version
+```
+
 ## 构建与运行
 ```bash
 ./build.sh
