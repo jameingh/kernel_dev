@@ -4,6 +4,7 @@
 ```bash
 brew install qemu
 brew install i386-elf-gcc
+# 显示i386-elf-gcc的安装路径
 brew --prefix i386-elf-gcc
 x86_64-elf-gcc --version
 ```
