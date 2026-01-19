@@ -6,18 +6,48 @@
 #include "shell.h"
 #include "process.h"
 // 本文件负责：
-// - 异常处理入口（isr_handler）：任何异常均在屏幕顶行输出异常号并停机，便于早期诊断
-// - IRQ 分发（irq_handler）：按向量号处理 PIT(IRQ0)、键盘(IRQ1) 等，并向 PIC 发送 EOI
-// - PIT 初始化与心跳状态栏：在第一行右侧定宽绘制 Hz/Ticks/Keys/Caps/Shift
-// - 键盘扫描码解析（Set1）：支持 Enter/Backspace/Shift/Caps，字母大小写依据 Shift XOR Caps
+// - 异常处理入口（isr_handler）：
+//     - 系统调用（int 0x80/128）：转发给 syscall_handler 处理
+//     - 其他异常：在屏幕顶行输出异常号并停机，便于早期诊断
+// - IRQ 分发（irq_handler）：
+//     - PIT(IRQ0)：维护系统节拍，刷新状态栏，并触发进程调度
+//     - 键盘(IRQ1)：解析扫描码并输入到 Shell
+//     - 通用处理：向 PIC 发送 EOI
+// - 状态栏绘制：在第一行右侧显示 Hz/Keys/MemFree
+// - 键盘扫描码解析（Set1）：支持 Enter/Backspace/Shift/Caps
 
-// 端口输出函数
+// 端口输出函数 (outb)
+// 作用：向指定 I/O 端口写入一个字节
+// 参数：
+// - port: 16位端口地址 (0-65535)
+// - val : 8位数据值
 static inline void outb(uint16_t port, uint8_t val) {
+    /*
+     * 汇编指令: outb %0, %1
+     * 含义: 将 %0 (val) 写入到端口 %1 (port)
+     * 
+     * 约束:
+     * : (无输出操作数)
+     * : "a"(val)    -> 将变量 val 放入 eax/ax/al 寄存器 (%0)
+     *   "Nd"(port)  -> 将变量 port 放入 edx/dx 寄存器 (%1)
+     *                  "N": 允许 0-255 的立即数 (优化用)
+     *                  "d": 强制使用 dx 寄存器 (端口号 > 255 时必须用 dx)
+     */
     asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );
 }
 
+// 端口输入函数 (inb)
+// 作用：从指定 I/O 端口读取一个字节
 static inline uint8_t inb(uint16_t port) {
     uint8_t ret;
+    /*
+     * 汇编指令: inb %1, %0
+     * 含义: 从端口 %1 (port) 读取数据到 %0 (ret)
+     * 
+     * 约束:
+     * : "=a"(ret)   -> 输出部分。读取结果存入 al，随后更新变量 ret
+     * : "Nd"(port)  -> 输入部分。端口号放入 dx (或立即数)
+     */
     asm volatile ( "inb %1, %0" : "=a"(ret) : "Nd"(port) );
     return ret;
 }
