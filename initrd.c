@@ -149,6 +149,7 @@ fs_node_t* initrd_finddir(fs_node_t* node, char* name) {
  * [ 4字节: 文件数(1) ]
  * [ 文件头(initrd_file_header_t) ]
  * [ 文件内容("Hello VFS World!") ]
+ * @see [initrd_construction.md](doc/initrd_construction.md)
  */
 void initrd_build_fake_disk(void) {
     /* 1. 写入文件数量 (int 1) */
